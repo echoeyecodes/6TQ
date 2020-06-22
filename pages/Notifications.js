@@ -12,30 +12,28 @@ import {
 import Layout from '../Layout';
 import ThemeContext from '../Context/ThemeContext';
 import moment from 'moment';
-import { useQuery } from 'react-apollo';
-import gql from 'graphql-tag'
+import {useQuery} from 'react-apollo';
+import gql from 'graphql-tag';
 import LoadingComponent from '../components/LoadingComponent';
 
 const NOTIFICATION_QUERY = gql`
   query {
-      notifications {
-        route
-        timestamp
-        isRead
-        message
-      }
+    notifications {
+      route
+      timestamp
+      isRead
+      message
     }
+  }
 `;
 
 const NOTIFICATION_SUBSCRIPTION = gql`
   subscription {
     userNotificationsUpdated {
-      notifications {
-        route
-        timestamp
-        isRead
-        message
-      }
+      route
+      timestamp
+      isRead
+      message
     }
   }
 `;
@@ -60,63 +58,68 @@ const NotificationItem = ({msg, image, time, route, navigation}) => {
   );
 };
 
-const Notifications = (props) => {
+const Notifications = props => {
   const {theme} = useContext(ThemeContext);
-  const [data, setData] = useState([])
-  const unsubscribeRef = useRef(null)
+  const [data, setData] = useState([]);
+  const unsubscribeRef = useRef(null);
   const {loading, refetch, subscribeToMore} = useQuery(NOTIFICATION_QUERY, {
     fetchPolicy: 'cache-and-network',
-    onCompleted: (queryData) =>{
-      setData([...queryData.notifications])
-    }
-  })
-  
-  useEffect(() =>{
-    if(subscribeToMore){
+    onCompleted: queryData => {
+      setData([...queryData.notifications]);
+    },
+  });
+
+  useEffect(() => {
+    if (subscribeToMore) {
       unsubscribeRef.current = subscribeToMore({
         document: NOTIFICATION_SUBSCRIPTION,
         updateQuery: (prev, {subscriptionData}) => {
           if (!subscriptionData.data) {
             return prev;
           }
-          setData([subscriptionData.data.userNotificationsUpdated, ...data])
-        }
-      })
+          setData([subscriptionData.data.userNotificationsUpdated, ...data]);
+        },
+      });
     }
-    return () =>{
-      if(unsubscribeRef.current){
-        unsubscribeRef.current()
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
       }
-    }
-  })
+    };
+  });
 
   return (
     <Layout title="Notifications">
       <View style={[styles.container, {backgroundColor: theme.background}]}>
         <View style={styles.notificationHolder}>
           <Text style={[styles.subtitle, {color: theme.foreground}]}>All</Text>
-          {loading ? <LoadingComponent /> :  <FlatList
-           refreshControl={
-            <RefreshControl
-              refreshing={loading}
-              onRefresh={() => {
-                refetch();
-              }}
+          {loading ? (
+            <LoadingComponent />
+          ) : (
+            <FlatList
+              refreshControl={
+                <RefreshControl
+                  refreshing={loading}
+                  onRefresh={() => {
+                    refetch();
+                  }}
+                />
+              }
+              data={data.sort(
+                (item1, item2) => item2.timestamp - item1.timestamp,
+              )}
+              keyExtractor={data => String(data.timestamp)}
+              renderItem={({item}) => (
+                <NotificationItem
+                  image={require('../assets/bot.png')}
+                  msg={item.message}
+                  time={item.timestamp}
+                  route={item.route}
+                  navigation={props.navigation}
+                />
+              )}
             />
-          }
-            data={data.sort(((item1, item2) => item2.timestamp - item1.timestamp))}
-            keyExtractor={data => String(data.timestamp)}
-            renderItem={({item}) => (
-              <NotificationItem
-                image={require('../assets/bot.png')}
-                msg={item.message}
-                time={item.timestamp}
-                route={item.route}
-                navigation={props.navigation}
-              />
-            )}
-          />}
-         
+          )}
         </View>
       </View>
     </Layout>
@@ -138,7 +141,7 @@ const styles = StyleSheet.create({
   },
   notificationHolder: {
     marginVertical: 10,
-    flex: 1
+    flex: 1,
   },
   notificationItem: {
     flexDirection: 'row',
@@ -152,7 +155,7 @@ const styles = StyleSheet.create({
   },
   notificationMsg: {
     marginLeft: 10,
-    fontFamily: "Poppins-Regular"
+    fontFamily: 'Poppins-Regular',
   },
   notificationTime: {
     color: 'rgba(0,0,0,0.5)',

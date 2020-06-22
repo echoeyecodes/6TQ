@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, {useEffect, useState, useRef} from 'react';
 import {
   StyleSheet,
@@ -9,7 +10,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import moment from 'moment-timezone';
 
-const TriviaDetails = ({startGame, data, minutes, userActivity, seconds}) => {
+const TriviaDetails = ({startGame, data, userActivity}) => {
   const {amount, isOpen, maintainanceRequired, time} = data;
   const {hasStaked, hasCurrentlyPlayed} = userActivity;
   const interval = useRef(null);
@@ -18,11 +19,11 @@ const TriviaDetails = ({startGame, data, minutes, userActivity, seconds}) => {
   const formattedSeconds = `0${timer.sec <= 0 ? '0' : timer.sec}`.slice(-2);
 
   const variedTime =
-    isOpen && minutes <= 0 && seconds <= 0
+    isOpen && timer.minutes <= 0 && timer.seconds <= 0
       ? 'ACTIVE NOW'
       : `${formattedMinutes}:${formattedSeconds}`;
 
-  beginTimer = () => {
+  const beginTimer = () => {
     const date = new Date(time);
     const end = moment(date);
     interval.current = setInterval(() => {
@@ -67,7 +68,11 @@ const TriviaDetails = ({startGame, data, minutes, userActivity, seconds}) => {
             {isOpen ? 'Event ends in' : 'Next round'}
           </Text>
           <Text style={[styles.amount, {fontSize: 20}]}>
-            {maintainanceRequired ? 'TBD' : isOpen ? `${variedTime} (Active now)` : variedTime}
+            {maintainanceRequired
+              ? 'TBD'
+              : isOpen
+              ? `${variedTime} (Active now)`
+              : variedTime}
           </Text>
         </View>
 
@@ -75,10 +80,9 @@ const TriviaDetails = ({startGame, data, minutes, userActivity, seconds}) => {
           onPress={() => {
             if (maintainanceRequired) {
               alert("Event hasn't been scheduled. Please try again later!");
-              return
+              return;
             }
 
-            
             if (!hasStaked) {
               alert('You have not placed a bet for this event');
               return;
@@ -87,9 +91,11 @@ const TriviaDetails = ({startGame, data, minutes, userActivity, seconds}) => {
               alert('Event has not started yet. Be chill!');
               return;
             }
-            if(hasCurrentlyPlayed){
-              alert("You have already participated in this event. Wait for the next one!")
-              return
+            if (hasCurrentlyPlayed) {
+              alert(
+                'You have already participated in this event. Wait for the next one!',
+              );
+              return;
             }
             startGame();
           }}>

@@ -70,8 +70,8 @@ class Quiz extends Component {
           mutation: USER_MUTATION,
           variables: {lives: -1},
         });
+      });
     }
-      )}
     this.abortTimer();
     const isValid = this.assignGlobalScore(value);
     this.timeoutRef = setTimeout(() => {
@@ -151,7 +151,7 @@ class Quiz extends Component {
         () => {
           setTimeout(() => {
             this.setState({showLifeAnim: false}, () => {
-              this.checkLimitReached(this.nextQuestion)
+              this.checkLimitReached(this.nextQuestion);
             });
           }, 1200);
         },
@@ -211,7 +211,7 @@ class Quiz extends Component {
 
   handleServerError = () => {
     this.setState({isLoading: false});
-    alert(`Couldn't fetch recent data from the server`);
+    alert("Couldn't fetch recent data from the server");
   };
 
   startGame = async () => {
@@ -228,9 +228,14 @@ class Quiz extends Component {
     if (appState === 'background') {
       this.abortTimer();
       this.setState({isDisabled: true});
-      this.prevAppState = 'background'
+      this.prevAppState = 'background';
       return;
-    } if(this.prevAppState && this.prevAppState == 'background' && appState=='active') {
+    }
+    if (
+      this.prevAppState &&
+      this.prevAppState == 'background' &&
+      appState == 'active'
+    ) {
       this.proceedToScoreScreen();
     }
   };

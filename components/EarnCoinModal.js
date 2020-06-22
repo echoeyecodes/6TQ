@@ -4,7 +4,7 @@ import {Modal, Portal} from 'react-native-paper'
 import EarnCoins from './EarnCoins'
 import ThemeContext from '../Context/ThemeContext'
 
-const EarnCoinModal = ({onDismiss, visible, onOptionSelected}) =>{
+const EarnCoinModal = ({onDismiss, visible, onOptionSelected, username}) =>{
     const {theme} = useContext(ThemeContext)
         return(
             <Portal>
@@ -18,7 +18,7 @@ const EarnCoinModal = ({onDismiss, visible, onOptionSelected}) =>{
             </Portal>
         )
     }
-    
+
 
 const styles = StyleSheet.create({
         container:{

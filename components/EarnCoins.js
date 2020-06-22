@@ -2,11 +2,11 @@ import React, { useContext } from 'react';
 import { StyleSheet, Text, View, Image, TouchableNativeFeedback } from 'react-native';
 import data from '../earn-coin-util'
 import ThemeContext from '../Context/ThemeContext';
-const EarnCoins = ({theme, onOptionSelected}) => {
+const EarnCoins = ({theme, onOptionSelected, username}) => {
   return (
     <View>
       {data.map((item, index) =>
-        <TouchableNativeFeedback key={index} onPress={() => onOptionSelected(index)}>
+        <TouchableNativeFeedback key={index} onPress={() => onOptionSelected(index, username )}>
           <View style={styles.container}>
             <View style={[styles.imageHolder, { backgroundColor: item.color }]}>
               <Image style={styles.image} source={item.image} />

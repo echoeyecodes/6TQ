@@ -20,8 +20,12 @@ import {WebSocketLink} from 'apollo-link-ws';
 import {getMainDefinition} from 'apollo-utilities';
 import {split} from 'apollo-link';
 import SnackbarComponent from './components/SnackbarComponent';
-import { SHOW_SNACKBAR, ENABLE_AUTHENTICATION, DISABLE_AUTHENTICATION } from './redux/actions/types';
-import { themes } from './Context/ThemeContext';
+import {
+  SHOW_SNACKBAR,
+  ENABLE_AUTHENTICATION,
+  DISABLE_AUTHENTICATION,
+} from './redux/actions/types';
+import {themes} from './Context/ThemeContext';
 import LevelReachedModal from './components/LevelReachedModal';
 
 const request = async operation => {
@@ -34,32 +38,32 @@ const request = async operation => {
 };
 
 const wsLink = new WebSocketLink({
-  uri: `ws://six-tq-server.herokuapp.com/graphql`,
+  uri: 'ws://192.168.43.31:3001/graphql',
   options: {
     reconnect: true,
     lazy: true,
-    reconnectionAttempts: Infinity
+    reconnectionAttempts: Infinity,
   },
 });
 
 const subscriptionMiddleware = {
   applyMiddleware: async (options, next) => {
-    const token = await AsyncStorage.getItem('user-token')
+    const token = await AsyncStorage.getItem('user-token');
     let data = {
-        headers:{
-          authorization: token ? `Bearer ${token}` : undefined
-        }
-    }
-    options.authToken = data
-    next()
+      headers: {
+        authorization: token ? `Bearer ${token}` : undefined,
+      },
+    };
+    options.authToken = data;
+    next();
   },
-}
+};
 
 // add the middleware to the web socket link via the Subscription Transport client
-wsLink.subscriptionClient.use([subscriptionMiddleware])
+wsLink.subscriptionClient.use([subscriptionMiddleware]);
 
 const httpLink = new HttpLink({
-  uri: 'https://six-tq-server.herokuapp.com/graphql',
+  uri: 'http://192.168.43.31:3001/graphql',
   credentials: 'same-origin',
 });
 const link = split(
@@ -92,7 +96,9 @@ const requestLink = new ApolloLink(
         .catch(observer.error.bind(observer));
 
       return () => {
-        if (handle) handle.unsubscribe();
+        if (handle) {
+          handle.unsubscribe();
+        }
       };
     }),
 );
@@ -100,18 +106,24 @@ const requestLink = new ApolloLink(
 const client = new ApolloClient({
   link: ApolloLink.from([
     onError(({graphQLErrors, networkError}) => {
-      if (graphQLErrors)
-        graphQLErrors.forEach(({message, locations, path}) =>{
+      if (graphQLErrors) {
+        graphQLErrors.forEach(({message, locations, path}) => {
           console.log(
             `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
-          )
-          if(message.includes('Not authencticated') || message.includes('jwt malformed')){
-            store.dispatch({type: DISABLE_AUTHENTICATION, payload: false})
+          );
+          if (
+            message.includes('Not authencticated') ||
+            message.includes('jwt malformed')
+          ) {
+            store.dispatch({type: DISABLE_AUTHENTICATION, payload: false});
           }
-        }
-        );
-      if (networkError){
-        store.dispatch({type: SHOW_SNACKBAR, payload: "Couldn't contact the server!"})
+        });
+      }
+      if (networkError) {
+        store.dispatch({
+          type: SHOW_SNACKBAR,
+          payload: "Couldn't contact the server!",
+        });
       }
     }),
     requestLink,
@@ -152,18 +164,18 @@ class App extends React.Component {
     });
   };
 
-  updateTheme = async () =>{
-    const theme = await AsyncStorage.getItem('app-theme')
-    if(!theme){
-      await AsyncStorage.setItem('app-theme', 'light')
-      this.setState({theme: themes.light})
-      return
+  updateTheme = async () => {
+    const theme = await AsyncStorage.getItem('app-theme');
+    if (!theme) {
+      await AsyncStorage.setItem('app-theme', 'light');
+      this.setState({theme: themes.light});
+      return;
     }
-    this.setState({theme: themes[theme]})
-  }
+    this.setState({theme: themes[theme]});
+  };
 
   async bootstrap() {
-    this.updateTheme()
+    this.updateTheme();
     await GoogleSignin.configure({
       scopes: ['https://www.googleapis.com/auth/drive.readonly'],
       webClientId:
@@ -171,17 +183,16 @@ class App extends React.Component {
     });
   }
 
-  toggleTheme =async  () =>{
-    const theme = await AsyncStorage.getItem('app-theme')
-    if(theme=='dark'){
-      await AsyncStorage.setItem('app-theme', 'light')
-      this.setState({theme: themes.light})
-      return
+  toggleTheme = async () => {
+    const theme = await AsyncStorage.getItem('app-theme');
+    if (theme == 'dark') {
+      await AsyncStorage.setItem('app-theme', 'light');
+      this.setState({theme: themes.light});
+      return;
     }
-    await AsyncStorage.setItem('app-theme', 'dark')
-    this.setState({theme: themes.dark})
-  }
-  
+    await AsyncStorage.setItem('app-theme', 'dark');
+    this.setState({theme: themes.dark});
+  };
 
   authenticate = async () => {
     /* await AsyncStorage.setItem('user-token', 'sdasdr')
@@ -218,7 +229,10 @@ class App extends React.Component {
                 <NavigationContainer>
                   <SnackbarComponent />
                   <LevelReachedModal />
-                    <MainActivity toggleTheme={this.toggleTheme} theme={this.state.theme} />
+                  <MainActivity
+                    toggleTheme={this.toggleTheme}
+                    theme={this.state.theme}
+                  />
                 </NavigationContainer>
               )}
             </PersistGate>

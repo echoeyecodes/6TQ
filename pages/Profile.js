@@ -7,6 +7,7 @@ import {
   TouchableNativeFeedback,
   Clipboard,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import {FAB, Snackbar} from 'react-native-paper';
 import Entypo from 'react-native-vector-icons/Entypo';
@@ -20,11 +21,12 @@ import {
   RewardedAd,
   RewardedAdEventType,
 } from '@react-native-firebase/admob';
-import {useMutation} from '@apollo/react-hooks';
+import {useMutation, useQuery} from '@apollo/react-hooks';
 import gql from 'graphql-tag';
 import {connect} from 'react-redux';
 import {showSnackBar} from '../redux/actions/snackbar-actions';
 import LoadingScreen from '../components/QuizComponents/LoadingScreen';
+import LoadingComponent from '../components/LoadingComponent';
 const USER_MUTATION = gql`
   mutation User($lives: Int, $points: Int) {
     updateUserStats(lives: $lives, points: $points) {
@@ -35,6 +37,31 @@ const USER_MUTATION = gql`
   }
 `;
 
+const USER_QUERY = gql`
+  query {
+    user {
+      stats {
+        currentPoints
+        cashLeft
+        level
+        coins
+        lives
+        gamesPlayed
+      }
+      activity {
+        hasStaked
+        hasCurrentlyPlayed
+        hasRequestedWithdrawal
+      }
+      bio {
+        email
+        username
+        fullName
+        imageUrl
+      }
+    }
+  }
+`;
 
 const ProfileHeader = ({userData}) => {
   const {fullName, imageUrl, username} = userData;
@@ -58,9 +85,13 @@ const ProfileCounts = ({userData}) => {
   const {theme} = useContext(ThemeContext);
   const {gamesPlayed, currentPoints, level} = userData;
   return (
-    <View style={[styles.profileCount, {
-      borderColor: theme.border
-    }]}>
+    <View
+      style={[
+        styles.profileCount,
+        {
+          borderColor: theme.border,
+        },
+      ]}>
       <View style={styles.profileCountItem}>
         <Text style={[styles.profileTitle, {color: theme.foreground}]}>
           {gamesPlayed}
@@ -124,11 +155,11 @@ const ProfileTabs = ({children, title, description}) => {
 };
 const Profile = props => {
   const {theme} = useContext(ThemeContext);
-  const {bio, stats, activity} = props.userData;
   const [showOptions, setShowOptions] = useState(false);
   const [increaseUserLife, {}] = useMutation(USER_MUTATION);
-
- 
+  const {data, loading, error, refetch} = useQuery(USER_QUERY, {
+    fetchPolicy: 'cache-and-network',
+  });
 
   const showAd = () => {
     props.showSnackBar('Loading your ad. Please wait...');
@@ -154,23 +185,22 @@ const Profile = props => {
     interstitialId.load();
   };
 
-  const copyUserNameToClipboard = () => {
+  const copyUserNameToClipboard = username => {
+    console.log(username);
     Clipboard.setString(
-      `Hey! Join me on 6TQ to win cash prizes. Used my code to win extra lives. My referal code is ${
-        bio.username
-      }`,
+      `Hey! Join me on 6TQ to win cash prizes. Used my code to win extra lives. My referal code is ${username}`,
     );
-    props.showSnackBar(`Your referal code has been copied to clipboard`);
+    props.showSnackBar('Your referal code has been copied to clipboard');
   };
 
-  const onOptionSelected = value => {
+  const onOptionSelected = (value, payload) => {
     setShowOptions(false);
     switch (value) {
       case 0:
         showAd();
         break;
       case 1:
-        copyUserNameToClipboard();
+        copyUserNameToClipboard(payload);
         break;
       case 2:
         navigateToStore('Lives');
@@ -187,6 +217,8 @@ const Profile = props => {
     });
   };
 
+  useEffect(() => {}, []);
+
   return (
     <Layout title="Profile">
       <View style={[styles.container, {backgroundColor: theme.background}]}>
@@ -194,29 +226,48 @@ const Profile = props => {
           onDismiss={showRechargeOptions}
           onOptionSelected={onOptionSelected}
           visible={showOptions}
+          username={data.user.bio.username}
         />
-        <ScrollView decelerationRate={0.997}>
-          <ProfileHeader userData={bio} />
-          <ProfileCounts userData={stats} />
-          <ProfileTabs title="Lives" description={`Remaining ${stats.lives}`}>
-            <RechargeButton
-              value="Recharge"
-              showRechargeOptions={showRechargeOptions}
+        <ScrollView
+          decelerationRate={0.997}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={() => {
+                refetch();
+              }}
             />
-          </ProfileTabs>
-          <ProfileTabs title="Coins" description={stats.coins}>
-            <RechargeButton
-              value="Buy More"
-              showRechargeOptions={() => navigateToStore('Coins')}
-            />
-          </ProfileTabs>
-          <ProfileTabs title="Contact Information" description={bio.email} />
-          <ProfileTabs
-            title="Total Cash"
-            description={`#${stats.cashLeft} ${
-              activity.hasRequestedWithdrawal ? '(Pending)' : ''
-            }`}
-          />
+          }>
+          {data && (
+            <>
+              <ProfileHeader userData={data.user.bio} />
+              <ProfileCounts userData={data.user.stats} />
+              <ProfileTabs
+                title="Lives"
+                description={`Remaining ${data.user.stats.lives}`}>
+                <RechargeButton
+                  value="Recharge"
+                  showRechargeOptions={showRechargeOptions}
+                />
+              </ProfileTabs>
+              <ProfileTabs title="Coins" description={data.user.stats.coins}>
+                <RechargeButton
+                  value="Buy More"
+                  showRechargeOptions={() => navigateToStore('Coins')}
+                />
+              </ProfileTabs>
+              <ProfileTabs
+                title="Contact Information"
+                description={data.user.bio.email}
+              />
+              <ProfileTabs
+                title="Total Cash"
+                description={`#${data.user.stats.cashLeft} ${
+                  data.user.activity.hasRequestedWithdrawal ? '(Pending)' : ''
+                }`}
+              />
+            </>
+          )}
         </ScrollView>
 
         <FAB
@@ -226,15 +277,19 @@ const Profile = props => {
           color="white"
           style={styles.fab}
           onPress={() => {
-            if(stats.cashLeft < 1000){
-              alert("You must have a minium of #1000 before you can issue a withdrawal")
-              return
+            if (data.user.stats.cashLeft < 1000) {
+              alert(
+                'You must have a minium of #1000 before you can issue a withdrawal',
+              );
+              return;
             }
-            if(activity.hasRequestedWithdrawal){
-              alert("You have already issued a request. Wait until it is resolved")
-              return
+            if (data.user.activity.hasRequestedWithdrawal) {
+              alert(
+                'You have already issued a request. Wait until it is resolved',
+              );
+              return;
             }
-            props.navigation.navigate("Withdraw")
+            props.navigation.navigate('Withdraw');
           }}
         />
       </View>
@@ -268,12 +323,6 @@ const styles = StyleSheet.create({
   profileDesc: {
     fontFamily: 'poppins-regular',
     color: 'rgba(0,0,0,0.5)',
-  },
-  profileCount: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 5,
   },
   profileCount: {
     flexDirection: 'row',

@@ -1,5 +1,12 @@
-import React, {Component, useContext} from 'react';
-import {StyleSheet, View, Image, Text, ScrollView, RefreshControl} from 'react-native';
+import React, {useEffect, useContext, useState, useRef} from 'react';
+import {
+  StyleSheet,
+  View,
+  Image,
+  Text,
+  ScrollView,
+  RefreshControl,
+} from 'react-native';
 import TriviaDetails from '../components/QuizMenuComponents/TriviaDetails';
 import Layout from '../Layout';
 import ThemeContext from '../Context/ThemeContext';
@@ -8,7 +15,7 @@ import gql from 'graphql-tag';
 import {FAB} from 'react-native-paper';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import PlaceBetModal from '../components/PlacebetModal';
-import {Query} from 'react-apollo';
+import {Query, useQuery} from 'react-apollo';
 import LoadingComponent from '../components/LoadingComponent';
 import {showSnackBar} from '../redux/actions/snackbar-actions';
 import {connect} from 'react-redux';
@@ -24,6 +31,20 @@ const EVENT_QUERY = gql`
       time
       maintainanceRequired
     }
+    user {
+      stats {
+        currentPoints
+        cashLeft
+        level
+        coins
+        lives
+      }
+      activity {
+        hasStaked
+        hasCurrentlyPlayed
+        hasRequestedWithdrawal
+      }
+    }
   }
 `;
 
@@ -36,6 +57,29 @@ const EVENT_SUBSCRIPTION = gql`
       time
       maintainanceRequired
       canStake
+    }
+  }
+`;
+
+const USER_ACTIVITY_SUBSCRIPTION = gql`
+  subscription {
+    userActivityUpdated {
+      hasStaked
+      hasCurrentlyPlayed
+      hasRequestedWithdrawal
+    }
+  }
+`;
+
+const USER_STATS_SUBSCRIPTION = gql`
+  subscription {
+    userStatsUpdated {
+      currentPoints
+      gamesPlayed
+      cashLeft
+      lives
+      level
+      coins
     }
   }
 `;
@@ -59,153 +103,181 @@ const UserParticipatedComponent = ({data}) => {
     </View>
   );
 };
-class QuizMenu extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      isLoading: false,
-      showModal: false,
-      stake: null,
-      minutes: 0,
-      seconds: 0,
-    };
-  }
+const QuizMenu = props => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [stake, setStake] = useState(null);
+  const {data, loading, error, subscribeToMore, refetch} = useQuery(
+    EVENT_QUERY,
+  );
+  const {theme, toggleTheme} = useContext(ThemeContext);
+  const unsubscribe = useRef(null);
+  const unsubscribe1 = useRef(null);
+  const unsubscribe2 = useRef(null);
 
-  startGame = () => {
-    this.onCompleted();
+  const {
+    events,
+    user: {
+      stats: {currentPoints, lives},
+    },
+  } = data;
+  const startGame = livess => {
+    onCompleted(lives);
   };
 
-  onBetPlaced = message => {
-    this.props.showSnackBar(message);
-    this.dismissModal();
+  const onBetPlaced = message => {
+    dismissModal();
+    props.showSnackBar(message);
   };
 
-  dismissModal = () => {
-    this.setState({showModal: false, stake: null});
+  const dismissModal = () => {
+    setShowModal(false);
+    setStake(null);
   };
 
-  onCompleted = () => {
-    this.setState({isLoading: true}, () => {
-      setTimeout(() => {
-        this.setState({isLoading: false}, () => {
-          this.props.navigation.navigate('Quiz', {
-            lives: this.props.userStats.lives,
+  const onCompleted = lives => {
+    console.log(lives);
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+      props.navigation.navigate('Quiz', {
+        lives,
+      });
+    }, 2000);
+  };
+
+  useEffect(() => {
+    unsubscribe.current = subscribeToMore({
+      document: EVENT_SUBSCRIPTION,
+      updateQuery: (prev, {subscriptionData}) => {
+        if (!subscriptionData.data) {
+          return prev;
+        }
+        console.log(subscriptionData.data.eventUpdated);
+        const {eventUpdated} = subscriptionData.data;
+        const {isOpen, canStake} = eventUpdated;
+
+        const isNewEvent = !isOpen && isOpen !== prev.events.isOpen && canStake;
+
+        if (isNewEvent) {
+          props.showMessage({
+            title: `Event has ended. Looks like you finished with ${currentPoints} points`,
+            desc:
+              'Drop your price for the next round to play more and win more!',
+            image: require('../assets/time.png'),
           });
+        }
+        return Object.assign({}, prev, {
+          events: {...prev.events, ...eventUpdated},
         });
-      }, 2000);
+      },
     });
-  };
 
-  componentDidMount() {}
+    unsubscribe1.current = subscribeToMore({
+      document: USER_ACTIVITY_SUBSCRIPTION,
+      updateQuery: (prev, {subscriptionData}) => {
+        if (!subscriptionData.data) {
+          return prev;
+        }
+        const {
+          data: {userActivityUpdated},
+        } = subscriptionData;
+        const newActivity = userActivityUpdated;
+        console.log(newActivity);
+        return Object.assign({}, prev, {
+          user: {...prev.user, activity: newActivity},
+        });
+      },
+    });
 
-  subscribeToMore = () => {};
+    unsubscribe2.current = subscribeToMore({
+      document: USER_STATS_SUBSCRIPTION,
+      updateQuery: (prev, {subscriptionData}) => {
+        if (!subscriptionData.data) {
+          return prev;
+        }
+        const newStats = subscriptionData.data.userStatsUpdated;
 
-  componentWillUnmount() {}
+        const isLevelDifference = newStats.level > prev.user.stats.level;
 
-  render() {
-    return (
-      <ThemeContext.Consumer>
-        {({theme}) => (
-          <Layout title="Home">
-            <Query fetchPolicy="cache-and-network" query={EVENT_QUERY}>
-              {({data, loading, error, subscribeToMore, refetch}) => {
-                if (loading) return <LoadingComponent />;
-                if (error) return <Text>Error</Text>;
-                const {events} = data;
-                this.subscribeToMore = subscribeToMore({
-                  document: EVENT_SUBSCRIPTION,
-                  updateQuery: (prev, {subscriptionData}) => {
-                    if (!subscriptionData.data) {
-                      return prev;
-                    }
+        if (isLevelDifference) {
+          props.showMessage({
+            title: `Congratulations! You just leveled up to level ${
+              newStats.level
+            }`,
+            desc: `You now earn an extra ${
+              newStats.level
+            }% on evey amount of money you withdraw`,
+            image: require('../assets/level.png'),
+          });
+        }
+        return Object.assign({}, prev, {
+          user: {...prev.user, stats: newStats},
+        });
+      },
+    });
 
-                    const isNewEvent =
-                      !subscriptionData.data.eventUpdated.isOpen &&
-                      subscriptionData.data.eventUpdated.isOpen !==
-                        prev.events.isOpen &&
-                      subscriptionData.data.eventUpdated.canStake;
+    return () => {
+      unsubscribe.current();
+      unsubscribe1.current();
+      unsubscribe2.current();
+    };
+  }, [currentPoints, props, subscribeToMore]);
 
-                    if (isNewEvent) {
-                      this.props.showMessage({
-                        title: `Event has ended. Looks like you finished with ${
-                          this.props.userStats.currentPoints
-                        } points`,
-                        desc:
-                          'Place your bets for the next round to play more and win more!',
-                        image: require('../assets/time.png'),
-                      });
-                    }
-                    return Object.assign({}, prev, {
-                      events: subscriptionData.data.eventUpdated,
-                    });
-                  },
-                });
-                return (
-                  <>
-                  <ScrollView showsVerticalScrollIndicator={false}    refreshControl= {<RefreshControl
-              refreshing={loading}
-              onRefresh={() => {
-                refetch();
-              }}
-            />
-              }
-            >
-                  <View
-                    style={[
-                      styles.container,
-                      {backgroundColor: theme.background},
-                    ]}>
-                    {this.state.isLoading && (
-                      <LoadingScreen message="Starting your game" />
-                    )}
-                    <TriviaDetails
-                      data={events}
-                      userActivity={this.props.userActivity}
-                      startGame={this.startGame}
-                    />
-                    <UserParticipatedComponent
-                      data={this.props.userActivity.hasStaked}
-                    />
-                    <PlaceBetModal
-                      onBetPlaced={this.onBetPlaced}
-                      onDismiss={this.dismissModal}
-                      visible={this.state.showModal}
-                      coinsLeft={this.props.userStats.coins}
-                    />
-                  </View>
-                  </ScrollView>
-
-                  <FAB
-                      icon={({color, size, ...props}) => (
-                        <FontAwesome
-                          {...props}
-                          name="money"
-                          color={color}
-                          size={size}
-                        />
-                      )}
-                      color="white"
-                      style={styles.fab}
-                      onPress={() => {
-                        if (!events.canStake) {
-                          alert(
-                            'You cannot place bets at this time. Try again after this event is over',
-                          );
-                          return;
-                        }
-                        this.setState({showModal: true});
-                      }}
-                    />
-                  </>
-                );
-              }}
-            </Query>
-          </Layout>
-        )}
-      </ThemeContext.Consumer>
-    );
+  if (loading) {
+    return <LoadingComponent />;
   }
-}
+  if (error) {
+    return <Text>Error</Text>;
+  }
+
+  return (
+    <Layout title="Home">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={() => {
+              refetch();
+            }}
+          />
+        }>
+        <View style={[styles.container, {backgroundColor: theme.background}]}>
+          {isLoading && <LoadingScreen message="Starting your game" />}
+          <TriviaDetails
+            data={events}
+            userActivity={data.user.activity}
+            startGame={() => startGame(data.user.stats.lives)}
+          />
+          <UserParticipatedComponent data={data.user.activity.hasStaked} />
+          <PlaceBetModal
+            onBetPlaced={onBetPlaced}
+            onDismiss={dismissModal}
+            visible={showModal}
+            coinsLeft={data.user.stats.coins}
+          />
+        </View>
+      </ScrollView>
+      <FAB
+        icon={({color, size, ...props}) => (
+          <FontAwesome {...props} name="money" color={color} size={size} />
+        )}
+        color="white"
+        style={styles.fab}
+        onPress={() => {
+          if (!events.canStake) {
+            alert(
+              'You cannot place bets at this time. Try again after this event is over',
+            );
+            return;
+          }
+          setShowModal(true);
+        }}
+      />
+    </Layout>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
