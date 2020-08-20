@@ -38,7 +38,7 @@ const request = async operation => {
 };
 
 const wsLink = new WebSocketLink({
-  uri: 'ws://192.168.43.31:3001/graphql',
+  uri: 'ws://15.15.15.5:3001/graphql',
   options: {
     reconnect: true,
     lazy: true,
@@ -63,7 +63,7 @@ const subscriptionMiddleware = {
 wsLink.subscriptionClient.use([subscriptionMiddleware]);
 
 const httpLink = new HttpLink({
-  uri: 'http://192.168.137.1:3001/graphql',
+  uri: 'http://15.15.15.5:3001/graphql',
   credentials: 'same-origin',
 });
 const link = split(

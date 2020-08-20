@@ -231,7 +231,7 @@ const Profile = props => {
           onDismiss={showRechargeOptions}
           onOptionSelected={onOptionSelected}
           visible={showOptions}
-          username={data.bio.username}
+          username={data?.bio.username}
         />
         <ScrollView
           decelerationRate={0.997}
@@ -282,13 +282,13 @@ const Profile = props => {
           color="white"
           style={styles.fab}
           onPress={() => {
-            if (data.stats.cashLeft < 1000) {
+            if (data?.stats.cashLeft < 1000) {
               alert(
                 'You must have a minium of #1000 before you can issue a withdrawal',
               );
               return;
             }
-            if (data.activity.hasRequestedWithdrawal) {
+            if (data?.activity.hasRequestedWithdrawal) {
               alert(
                 'You have already issued a request. Wait until it is resolved',
               );

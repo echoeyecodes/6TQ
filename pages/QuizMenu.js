@@ -150,114 +150,122 @@ const QuizMenu = props => {
   };
 
   useEffect(() => {
-    unsubscribe.current = subscribeToMore({
-      document: EVENT_SUBSCRIPTION,
-      updateQuery: (prev, {subscriptionData}) => {
-        if (!subscriptionData.data) {
-          return prev;
-        }
-        console.log(subscriptionData.data.eventUpdated);
-        const {eventUpdated} = subscriptionData.data;
-        const {isOpen, canStake} = eventUpdated;
+    if (data) {
+      unsubscribe.current = subscribeToMore({
+        document: EVENT_SUBSCRIPTION,
+        updateQuery: (prev, {subscriptionData}) => {
+          if (!subscriptionData.data) {
+            return prev;
+          }
+          console.log(subscriptionData.data.eventUpdated);
+          const {eventUpdated} = subscriptionData.data;
+          const {isOpen, canStake} = eventUpdated;
 
-        const isNewEvent = !isOpen && isOpen !== prev.events.isOpen && canStake;
+          const isNewEvent =
+            !isOpen && isOpen !== prev.events.isOpen && canStake;
 
-        if (isNewEvent) {
-          props.showMessage({
-            title: `Event has ended. Looks like you finished with ${currentPoints} points`,
-            desc:
-              'Drop your price for the next round to play more and win more!',
-            image: require('../assets/time.png'),
+          if (isNewEvent) {
+            props.showMessage({
+              title: `Event has ended. Looks like you finished with ${currentPoints} points`,
+              desc:
+                'Drop your price for the next round to play more and win more!',
+              image: require('../assets/time.png'),
+            });
+          }
+          return Object.assign({}, prev, {
+            events: eventUpdated,
           });
-        }
-        return Object.assign({}, prev, {
-          events: eventUpdated,
-        });
-      },
-    });
+        },
+      });
 
-    unsubscribe1.current = subscribeToMore({
-      document: USER_ACTIVITY_SUBSCRIPTION,
-      updateQuery: (prev, {subscriptionData}) => {
-        if (!subscriptionData.data) {
-          return prev;
-        }
-        const {
-          data: {userActivityUpdated},
-        } = subscriptionData;
-        const newActivity = userActivityUpdated;
-        console.log(newActivity);
-        return Object.assign({}, prev, {
-          activity: newActivity,
-        });
-      },
-    });
-
-    unsubscribe2.current = subscribeToMore({
-      document: USER_STATS_SUBSCRIPTION,
-      updateQuery: (prev, {subscriptionData}) => {
-        if (!subscriptionData.data) {
-          return prev;
-        }
-        const newStats = subscriptionData.data.userStatsUpdated;
-
-        const isLevelDifference = newStats.level > prev.stats.level;
-        console.log(newStats);
-
-        if (isLevelDifference) {
-          props.showMessage({
-            title: `Congratulations! You just leveled up to level ${
-              newStats.level
-            }`,
-            desc: `You now earn an extra ${
-              newStats.level
-            }% on evey amount of money you withdraw`,
-            image: require('../assets/level.png'),
+      unsubscribe1.current = subscribeToMore({
+        document: USER_ACTIVITY_SUBSCRIPTION,
+        updateQuery: (prev, {subscriptionData}) => {
+          if (!subscriptionData.data) {
+            return prev;
+          }
+          const {
+            data: {userActivityUpdated},
+          } = subscriptionData;
+          const newActivity = userActivityUpdated;
+          console.log(newActivity);
+          return Object.assign({}, prev, {
+            activity: newActivity,
           });
-        }
-        return Object.assign({}, prev, {
-          stats: newStats,
-        });
-      },
-    });
+        },
+      });
+
+      unsubscribe2.current = subscribeToMore({
+        document: USER_STATS_SUBSCRIPTION,
+        updateQuery: (prev, {subscriptionData}) => {
+          if (!subscriptionData.data) {
+            return prev;
+          }
+          const newStats = subscriptionData.data.userStatsUpdated;
+
+          const isLevelDifference = newStats.level > prev.stats.level;
+          console.log(newStats);
+
+          if (isLevelDifference) {
+            props.showMessage({
+              title: `Congratulations! You just leveled up to level ${
+                newStats.level
+              }`,
+              desc: `You now earn an extra ${
+                newStats.level
+              }% on evey amount of money you withdraw`,
+              image: require('../assets/level.png'),
+            });
+          }
+          return Object.assign({}, prev, {
+            stats: newStats,
+          });
+        },
+      });
+    }
 
     return () => {
       unsubscribe.current();
       unsubscribe1.current();
       unsubscribe2.current();
     };
-  }, [data]);
+  }, []);
 
   return (
     <Layout title="Home">
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={loading}
-            onRefresh={() => {
-              refetch();
-            }}
-          />
-        }>
-        <View style={[styles.container, {backgroundColor: theme.background}]}>
-          {events && (
-            <>
-              <TriviaDetails
-                data={events}
-                userActivity={data.activity}
-                startGame={() => startGame(data.stats.lives)}
-              />
-              <UserParticipatedComponent data={data.activity.hasStaked} />
-              <PlaceBetModal
-                onBetPlaced={onBetPlaced}
-                onDismiss={dismissModal}
-                visible={showModal}
-                coinsLeft={data.stats.coins}
-              />
-            </>
-          )}
+      <View style={styles.container}>
+        <ScrollView
+          style={{flex: 1}}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={() => {
+                refetch();
+              }}
+            />
+          }>
+          <View style={[styles.container, {backgroundColor: theme.background}]}>
+            {data && (
+              <View style={{flex: 1}}>
+                <TriviaDetails
+                  data={events}
+                  userActivity={data.activity}
+                  startGame={() => startGame(data.stats.lives)}
+                />
+                <UserParticipatedComponent data={data.activity.hasStaked} />
+                <PlaceBetModal
+                  onBetPlaced={onBetPlaced}
+                  onDismiss={dismissModal}
+                  visible={showModal}
+                  coinsLeft={data.stats.coins}
+                />
+              </View>
+            )}
+          </View>
+        </ScrollView>
 
+        {data && (
           <FAB
             icon={({color, size, ...props}) => (
               <FontAwesome {...props} name="money" color={color} size={size} />
@@ -274,8 +282,8 @@ const QuizMenu = props => {
               setShowModal(true);
             }}
           />
-        </View>
-      </ScrollView>
+        )}
+      </View>
     </Layout>
   );
 };

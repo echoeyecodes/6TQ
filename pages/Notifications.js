@@ -40,7 +40,7 @@ const NOTIFICATION_SUBSCRIPTION = gql`
 
 const NotificationItem = ({msg, image, time, route, navigation}) => {
   const {theme} = useContext(ThemeContext);
-  const timeDifference = moment(new Date(time)).fromNow();
+  const timeDifference = moment(time).fromNow();
   return (
     <TouchableNativeFeedback onPress={() => navigation.navigate(route)}>
       <View style={styles.notificationItem}>
@@ -105,9 +105,7 @@ const Notifications = props => {
                   }}
                 />
               }
-              data={data.sort(
-                (item1, item2) => item2.timestamp - item1.timestamp,
-              )}
+              data={data}
               keyExtractor={data => String(data.timestamp)}
               renderItem={({item}) => (
                 <NotificationItem
@@ -145,7 +143,7 @@ const styles = StyleSheet.create({
   },
   notificationItem: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     padding: 10,
   },
   notificationImage: {
