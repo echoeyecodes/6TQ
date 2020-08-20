@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, {useEffect, useContext, useState, useRef} from 'react';
 import {
   StyleSheet,
@@ -31,19 +32,17 @@ const EVENT_QUERY = gql`
       time
       maintainanceRequired
     }
-    user {
-      stats {
-        currentPoints
-        cashLeft
-        level
-        coins
-        lives
-      }
-      activity {
-        hasStaked
-        hasCurrentlyPlayed
-        hasRequestedWithdrawal
-      }
+    stats {
+      currentPoints
+      cashLeft
+      level
+      coins
+      lives
+    }
+    activity {
+      hasStaked
+      hasCurrentlyPlayed
+      hasRequestedWithdrawal
     }
   }
 `;
@@ -109,6 +108,9 @@ const QuizMenu = props => {
   const [stake, setStake] = useState(null);
   const {data, loading, error, subscribeToMore, refetch} = useQuery(
     EVENT_QUERY,
+    {
+      fetchPolicy: 'cache-and-network',
+    },
   );
   const {theme, toggleTheme} = useContext(ThemeContext);
   const unsubscribe = useRef(null);
@@ -117,9 +119,9 @@ const QuizMenu = props => {
 
   const {
     events,
-    user: {
-      stats: {currentPoints, lives},
-    },
+    stats: {currentPoints, lives},
+    activity,
+    bio,
   } = data;
   const startGame = livess => {
     onCompleted(lives);
@@ -130,6 +132,7 @@ const QuizMenu = props => {
     props.showSnackBar(message);
   };
 
+  // Create seperate queries for stats, bio, activity
   const dismissModal = () => {
     setShowModal(false);
     setStake(null);
@@ -168,7 +171,7 @@ const QuizMenu = props => {
           });
         }
         return Object.assign({}, prev, {
-          events: {...prev.events, ...eventUpdated},
+          events: eventUpdated,
         });
       },
     });
@@ -185,7 +188,7 @@ const QuizMenu = props => {
         const newActivity = userActivityUpdated;
         console.log(newActivity);
         return Object.assign({}, prev, {
-          user: {...prev.user, activity: newActivity},
+          activity: newActivity,
         });
       },
     });
@@ -198,7 +201,8 @@ const QuizMenu = props => {
         }
         const newStats = subscriptionData.data.userStatsUpdated;
 
-        const isLevelDifference = newStats.level > prev.user.stats.level;
+        const isLevelDifference = newStats.level > prev.stats.level;
+        console.log(newStats);
 
         if (isLevelDifference) {
           props.showMessage({
@@ -212,7 +216,7 @@ const QuizMenu = props => {
           });
         }
         return Object.assign({}, prev, {
-          user: {...prev.user, stats: newStats},
+          stats: newStats,
         });
       },
     });
@@ -222,14 +226,7 @@ const QuizMenu = props => {
       unsubscribe1.current();
       unsubscribe2.current();
     };
-  }, [currentPoints, props, subscribeToMore]);
-
-  if (loading) {
-    return <LoadingComponent />;
-  }
-  if (error) {
-    return <Text>Error</Text>;
-  }
+  }, [data]);
 
   return (
     <Layout title="Home">
@@ -244,37 +241,41 @@ const QuizMenu = props => {
           />
         }>
         <View style={[styles.container, {backgroundColor: theme.background}]}>
-          {isLoading && <LoadingScreen message="Starting your game" />}
-          <TriviaDetails
-            data={events}
-            userActivity={data.user.activity}
-            startGame={() => startGame(data.user.stats.lives)}
-          />
-          <UserParticipatedComponent data={data.user.activity.hasStaked} />
-          <PlaceBetModal
-            onBetPlaced={onBetPlaced}
-            onDismiss={dismissModal}
-            visible={showModal}
-            coinsLeft={data.user.stats.coins}
+          {events && (
+            <>
+              <TriviaDetails
+                data={events}
+                userActivity={data.activity}
+                startGame={() => startGame(data.stats.lives)}
+              />
+              <UserParticipatedComponent data={data.activity.hasStaked} />
+              <PlaceBetModal
+                onBetPlaced={onBetPlaced}
+                onDismiss={dismissModal}
+                visible={showModal}
+                coinsLeft={data.stats.coins}
+              />
+            </>
+          )}
+
+          <FAB
+            icon={({color, size, ...props}) => (
+              <FontAwesome {...props} name="money" color={color} size={size} />
+            )}
+            color="white"
+            style={styles.fab}
+            onPress={() => {
+              if (events && !events.canStake) {
+                alert(
+                  'You cannot place bets at this time. Try again after this event is over',
+                );
+                return;
+              }
+              setShowModal(true);
+            }}
           />
         </View>
       </ScrollView>
-      <FAB
-        icon={({color, size, ...props}) => (
-          <FontAwesome {...props} name="money" color={color} size={size} />
-        )}
-        color="white"
-        style={styles.fab}
-        onPress={() => {
-          if (!events.canStake) {
-            alert(
-              'You cannot place bets at this time. Try again after this event is over',
-            );
-            return;
-          }
-          setShowModal(true);
-        }}
-      />
     </Layout>
   );
 };

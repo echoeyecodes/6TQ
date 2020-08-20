@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, {useEffect, useState, useRef} from 'react';
+import React, {useEffect, useState, useRef, useMemo} from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,40 +10,16 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import moment from 'moment-timezone';
 
-const TriviaDetails = ({startGame, data, userActivity}) => {
-  const {amount, isOpen, maintainanceRequired, time} = data;
-  const {hasStaked, hasCurrentlyPlayed} = userActivity;
-  const interval = useRef(null);
-  const [timer, setTime] = useState({min: 0, sec: 0});
-  const formattedMinutes = `0${timer.min <= 0 ? '0' : timer.min}`.slice(-2);
-  const formattedSeconds = `0${timer.sec <= 0 ? '0' : timer.sec}`.slice(-2);
-
-  const variedTime =
-    isOpen && timer.minutes <= 0 && timer.seconds <= 0
-      ? 'ACTIVE NOW'
-      : `${formattedMinutes}:${formattedSeconds}`;
-
-  const beginTimer = () => {
-    const date = new Date(time);
-    const end = moment(date);
-    interval.current = setInterval(() => {
-      const start = moment();
-
-      const minutes = moment.duration(end.diff(start)).minutes();
-      const seconds = moment.duration(end.diff(start)).seconds();
-
-      setTime({min: minutes, sec: seconds});
-    }, 1000);
-  };
-
-  useEffect(() => {
-    beginTimer();
-
-    return () => {
-      clearInterval(interval.current);
-    };
-  }, [data]);
-
+const triviaDetails = (
+  startGame,
+  amount,
+  isOpen,
+  maintainanceRequired,
+  time,
+  hasStaked,
+  hasCurrentlyPlayed,
+  variedTime,
+) => {
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -108,6 +84,67 @@ const TriviaDetails = ({startGame, data, userActivity}) => {
   );
 };
 
+const MemoizedTriviaDetails = ({data, startGame, userActivity}) => {
+  const {amount, isOpen, maintainanceRequired, time} = data;
+  const {hasStaked, hasCurrentlyPlayed} = userActivity;
+
+  const interval = useRef(null);
+  const [timer, setTime] = useState({min: 0, sec: 0});
+  const formattedMinutes = `0${timer.min <= 0 ? '0' : timer.min}`.slice(-2);
+  const formattedSeconds = `0${timer.sec <= 0 ? '0' : timer.sec}`.slice(-2);
+
+  const variedTime =
+    isOpen && timer.minutes <= 0 && timer.seconds <= 0
+      ? 'ACTIVE NOW'
+      : `${formattedMinutes}:${formattedSeconds}`;
+
+  const beginTimer = () => {
+    const date = new Date(time);
+    const end = moment(date);
+    interval.current = setInterval(() => {
+      const start = moment();
+
+      const minutes = moment.duration(end.diff(start)).minutes();
+      const seconds = moment.duration(end.diff(start)).seconds();
+
+      setTime({min: minutes, sec: seconds});
+    }, 1000);
+  };
+
+  useEffect(() => {
+    beginTimer();
+
+    return () => {
+      clearInterval(interval.current);
+    };
+  }, [data]);
+
+  const memoized = useMemo(
+    () =>
+      triviaDetails(
+        startGame,
+        amount,
+        isOpen,
+        maintainanceRequired,
+        time,
+        hasStaked,
+        hasCurrentlyPlayed,
+        variedTime,
+      ),
+    [
+      startGame,
+      amount,
+      isOpen,
+      maintainanceRequired,
+      time,
+      hasStaked,
+      hasCurrentlyPlayed,
+      variedTime,
+    ],
+  );
+
+  return memoized;
+};
 const styles = StyleSheet.create({
   container: {
     minHeight: Dimensions.get('screen').height / 4,
@@ -152,4 +189,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TriviaDetails;
+export default MemoizedTriviaDetails;

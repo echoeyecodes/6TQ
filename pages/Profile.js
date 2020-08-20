@@ -39,29 +39,29 @@ const USER_MUTATION = gql`
 
 const USER_QUERY = gql`
   query {
-    user {
-      stats {
-        currentPoints
-        cashLeft
-        level
-        coins
-        lives
-        gamesPlayed
-      }
-      activity {
-        hasStaked
-        hasCurrentlyPlayed
-        hasRequestedWithdrawal
-      }
-      bio {
-        email
-        username
-        fullName
-        imageUrl
-      }
+    stats {
+      currentPoints
+      cashLeft
+      level
+      coins
+      lives
+      gamesPlayed
+    }
+    activity {
+      hasStaked
+      hasCurrentlyPlayed
+      hasRequestedWithdrawal
+    }
+    bio {
+      email
+      username
+      fullName
+      imageUrl
     }
   }
 `;
+
+// @client diretive to query to load locally from cache
 
 const ProfileHeader = ({userData}) => {
   const {fullName, imageUrl, username} = userData;
@@ -161,10 +161,16 @@ const Profile = props => {
     fetchPolicy: 'cache-and-network',
   });
 
+  useEffect(() => {
+    const unsubscribeRoute = props.navigation.addListener('focus', refetch);
+
+    return unsubscribeRoute;
+  }, [props.navigation, refetch]);
+
   const showAd = () => {
     props.showSnackBar('Loading your ad. Please wait...');
     const interstitialId = RewardedAd.createForAdRequest(
-      'ca-app-pub-5590121921077996/9067677674',
+      'ca-app-pub-5590121921077996/4700653644',
     );
     interstitialId.onAdEvent(async (type, error, reward) => {
       /* RewardedAdEventType.EARNED_REWARD */
@@ -185,10 +191,11 @@ const Profile = props => {
     interstitialId.load();
   };
 
-  const copyUserNameToClipboard = username => {
-    console.log(username);
+  const copyUserNameToClipboard = () => {
     Clipboard.setString(
-      `Hey! Join me on 6TQ to win cash prizes. Used my code to win extra lives. My referal code is ${username}`,
+      `Hey! Join me on 6TQ to win cash prizes. Use my code to win extra lives. My referal code is ${
+        data.bio.username
+      }`,
     );
     props.showSnackBar('Your referal code has been copied to clipboard');
   };
@@ -217,8 +224,6 @@ const Profile = props => {
     });
   };
 
-  useEffect(() => {}, []);
-
   return (
     <Layout title="Profile">
       <View style={[styles.container, {backgroundColor: theme.background}]}>
@@ -226,7 +231,7 @@ const Profile = props => {
           onDismiss={showRechargeOptions}
           onOptionSelected={onOptionSelected}
           visible={showOptions}
-          username={data.user.bio.username}
+          username={data.bio.username}
         />
         <ScrollView
           decelerationRate={0.997}
@@ -240,17 +245,17 @@ const Profile = props => {
           }>
           {data && (
             <>
-              <ProfileHeader userData={data.user.bio} />
-              <ProfileCounts userData={data.user.stats} />
+              <ProfileHeader userData={data.bio} />
+              <ProfileCounts userData={data.stats} />
               <ProfileTabs
                 title="Lives"
-                description={`Remaining ${data.user.stats.lives}`}>
+                description={`Remaining ${data.stats.lives}`}>
                 <RechargeButton
                   value="Recharge"
                   showRechargeOptions={showRechargeOptions}
                 />
               </ProfileTabs>
-              <ProfileTabs title="Coins" description={data.user.stats.coins}>
+              <ProfileTabs title="Coins" description={data.stats.coins}>
                 <RechargeButton
                   value="Buy More"
                   showRechargeOptions={() => navigateToStore('Coins')}
@@ -258,12 +263,12 @@ const Profile = props => {
               </ProfileTabs>
               <ProfileTabs
                 title="Contact Information"
-                description={data.user.bio.email}
+                description={data.bio.email}
               />
               <ProfileTabs
                 title="Total Cash"
-                description={`#${data.user.stats.cashLeft} ${
-                  data.user.activity.hasRequestedWithdrawal ? '(Pending)' : ''
+                description={`${'\u20A6'} ${data.stats.cashLeft} ${
+                  data.activity.hasRequestedWithdrawal ? '(Pending)' : ''
                 }`}
               />
             </>
@@ -277,13 +282,13 @@ const Profile = props => {
           color="white"
           style={styles.fab}
           onPress={() => {
-            if (data.user.stats.cashLeft < 1000) {
+            if (data.stats.cashLeft < 1000) {
               alert(
                 'You must have a minium of #1000 before you can issue a withdrawal',
               );
               return;
             }
-            if (data.user.activity.hasRequestedWithdrawal) {
+            if (data.activity.hasRequestedWithdrawal) {
               alert(
                 'You have already issued a request. Wait until it is resolved',
               );

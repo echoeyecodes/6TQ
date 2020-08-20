@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "13416192941",
-    "firebase_url": "https://tq-trivia-8a076.firebaseio.com",
-    "project_id": "tq-trivia-8a076",
-    "storage_bucket": "tq-trivia-8a076.appspot.com"
+    "project_number": "40175272704",
+    "firebase_url": "https://tqtrivia.firebaseio.com",
+    "project_id": "tqtrivia",
+    "storage_bucket": "tqtrivia.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:13416192941:android:2a36786442de342aa25f24",
+        "mobilesdk_app_id": "1:40175272704:android:bcb55b6f25fcef382ea9e5",
         "android_client_info": {
           "package_name": "com.fedorajs"
         }
       },
       "oauth_client": [
         {
-          "client_id": "13416192941-elnq7kcvua3joui2n9f6o59glj90ddlt.apps.googleusercontent.com",
+          "client_id": "40175272704-ph2ogkn4of3acit7uh6v7a4gqri8rqpj.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.fedorajs",
@@ -23,28 +23,20 @@
           }
         },
         {
-          "client_id": "13416192941-1u744n7ao7hm86dcl7de913bt73k6psf.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.fedorajs",
-            "certificate_hash": "726abada6c856ee7a74b4b6013abe81a138db457"
-          }
-        },
-        {
-          "client_id": "13416192941-oi6frrlf8agom4quu2g6h2hfegto3s1s.apps.googleusercontent.com",
+          "client_id": "40175272704-e1j644s96kd7esn552ivifin6qt0nc5m.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCf_Ohnoszobp0vGexruVpUgtiMhQiTN_E"
+          "current_key": "AIzaSyA8iRgi_uGgClfihPst0a_9VRYxiOkdeAw"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "13416192941-oi6frrlf8agom4quu2g6h2hfegto3s1s.apps.googleusercontent.com",
+              "client_id": "40175272704-e1j644s96kd7esn552ivifin6qt0nc5m.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

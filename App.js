@@ -63,7 +63,7 @@ const subscriptionMiddleware = {
 wsLink.subscriptionClient.use([subscriptionMiddleware]);
 
 const httpLink = new HttpLink({
-  uri: 'http://192.168.43.31:3001/graphql',
+  uri: 'http://192.168.137.1:3001/graphql',
   credentials: 'same-origin',
 });
 const link = split(
@@ -179,7 +179,7 @@ class App extends React.Component {
     await GoogleSignin.configure({
       scopes: ['https://www.googleapis.com/auth/drive.readonly'],
       webClientId:
-        '13416192941-oi6frrlf8agom4quu2g6h2hfegto3s1s.apps.googleusercontent.com', // required
+        '40175272704-e1j644s96kd7esn552ivifin6qt0nc5m.apps.googleusercontent.com', // required
     });
   }
 
