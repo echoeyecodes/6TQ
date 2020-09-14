@@ -1,4 +1,4 @@
-import React, {useContext} from 'react';
+import React, {useContext, memo} from 'react';
 import {
   StyleSheet,
   Text,
@@ -62,4 +62,4 @@ const styles = StyleSheet.create({
   }
 });
 
-export default ProfileOthers;
+export default memo(ProfileOthers);

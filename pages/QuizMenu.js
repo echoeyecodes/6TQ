@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, {useEffect, useContext, useState, useRef} from 'react';
+import React, {useEffect, useContext, useState, useRef, memo} from 'react';
 import {
   StyleSheet,
   View,
@@ -85,6 +85,7 @@ const USER_STATS_SUBSCRIPTION = gql`
 
 const UserParticipatedComponent = ({data}) => {
   const {theme} = useContext(ThemeContext);
+
   return (
     <View style={[styles.userParticipatedComponent]}>
       <Image
@@ -112,19 +113,13 @@ const QuizMenu = props => {
       fetchPolicy: 'cache-and-network',
     },
   );
-  const {theme, toggleTheme} = useContext(ThemeContext);
+  const {theme} = useContext(ThemeContext);
   const unsubscribe = useRef(null);
   const unsubscribe1 = useRef(null);
   const unsubscribe2 = useRef(null);
 
-  const {
-    events,
-    stats: {currentPoints, lives},
-    activity,
-    bio,
-  } = data;
   const startGame = livess => {
-    onCompleted(lives);
+    onCompleted(livess);
   };
 
   const onBetPlaced = message => {
@@ -132,7 +127,6 @@ const QuizMenu = props => {
     props.showSnackBar(message);
   };
 
-  // Create seperate queries for stats, bio, activity
   const dismissModal = () => {
     setShowModal(false);
     setStake(null);
@@ -166,7 +160,7 @@ const QuizMenu = props => {
 
           if (isNewEvent) {
             props.showMessage({
-              title: `Event has ended. Looks like you finished with ${currentPoints} points`,
+              title: `Event has ended. Looks like you finished with ${data?.stats.currentPoints} points`,
               desc:
                 'Drop your price for the next round to play more and win more!',
               image: require('../assets/time.png'),
@@ -249,16 +243,16 @@ const QuizMenu = props => {
             {data && (
               <View style={{flex: 1}}>
                 <TriviaDetails
-                  data={events}
-                  userActivity={data.activity}
-                  startGame={() => startGame(data.stats.lives)}
+                  data={data?.events}
+                  userActivity={data?.activity}
+                  startGame={() => startGame(data?.stats.lives)}
                 />
-                <UserParticipatedComponent data={data.activity.hasStaked} />
+                <UserParticipatedComponent data={data?.activity.hasStaked} />
                 <PlaceBetModal
                   onBetPlaced={onBetPlaced}
                   onDismiss={dismissModal}
                   visible={showModal}
-                  coinsLeft={data.stats.coins}
+                  coinsLeft={data?.stats.coins}
                 />
               </View>
             )}
@@ -273,13 +267,13 @@ const QuizMenu = props => {
             color="white"
             style={styles.fab}
             onPress={() => {
-              if (events && !events.canStake) {
+              if (data?.events.canStake) {
+                setShowModal(true);
+              }else{
                 alert(
                   'You cannot place bets at this time. Try again after this event is over',
                 );
-                return;
               }
-              setShowModal(true);
             }}
           />
         )}
@@ -327,4 +321,4 @@ const mapStateToProps = state => {
 export default connect(
   mapStateToProps,
   {showSnackBar, showMessage},
-)(QuizMenu);
+)(memo(QuizMenu));

@@ -52,7 +52,7 @@ const Login = props => {
     };
 
     try {
-      const {data} = await Axios.post('http://15.15.15.5:3001/account', {
+      const {data} = await Axios.post('http://15.15.15.9:3001/account', {
         bio,
         referalId: id.current,
       });
@@ -85,7 +85,7 @@ const Login = props => {
 
       if (fireUser) {
         const {data} = await Axios.get(
-          `http://15.15.15.5:3001/exists/${fireUser.user.uid}`,
+          `http://15.15.15.9:3001/exists/${fireUser.user.uid}`,
         ).catch(error => console.log(error));
         if (data.token) {
           setIsLoading(false);

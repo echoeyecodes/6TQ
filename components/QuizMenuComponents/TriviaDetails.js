@@ -99,7 +99,8 @@ const MemoizedTriviaDetails = ({data, startGame, userActivity}) => {
       : `${formattedMinutes}:${formattedSeconds}`;
 
   const beginTimer = () => {
-    const date = new Date(time);
+    const date = new Date();
+    date.setTime(time)
     const end = moment(date);
     interval.current = setInterval(() => {
       const start = moment();

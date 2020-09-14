@@ -1,4 +1,4 @@
-import React, {useContext, Component} from 'react';
+import React, {useContext, Component, useState, memo, useEffect} from 'react';
 import {
   StyleSheet,
   View,
@@ -11,7 +11,7 @@ import TopThreeProfile from '../components/LeaderBoardComponents/top-three-profi
 import ProfileOthers from '../components/LeaderBoardComponents/profile-others';
 import Layout from '../Layout';
 import ThemeContext from '../Context/ThemeContext';
-import {Query} from 'react-apollo';
+import {useQuery} from 'react-apollo';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import gql from 'graphql-tag';
 import {connect} from 'react-redux';
@@ -32,8 +32,12 @@ const USER_QUERY = gql`
     }
   }
 `;
-const Others = ({data, fetchMore, index, tabContext}) => {
+const Others = ({data, fetchMore, index, tabContext, context}) => {
   const {theme} = useContext(ThemeContext);
+
+  useEffect(() =>{
+
+  }, [data])
   return (
     <View key={index} style={styles.othersContainer}>
       {data.map(({bio, stats}, index) => (
@@ -42,7 +46,9 @@ const Others = ({data, fetchMore, index, tabContext}) => {
           key={bio.id}
           rank={index + 2}
           name={bio.fullName}
-          points={tabContext == 'All Time' ? stats.totalPoints : stats.currentPoints}
+          points={
+            context == 'All Time' ? stats.totalPoints : stats.currentPoints
+          }
           username={bio.username}
         />
       ))}
@@ -52,7 +58,7 @@ const Others = ({data, fetchMore, index, tabContext}) => {
           fetchMore({
             variables: {
               offset: index,
-              tabContext: tabContext =='All Time' ? 'all' : null
+              tabContext
             },
             updateQuery: (prev, {fetchMoreResult}) => {
               if (!fetchMoreResult) return prev;
@@ -71,109 +77,71 @@ const Others = ({data, fetchMore, index, tabContext}) => {
 };
 
 const FlatlistHeader = ({data, tabContext}) => {
-  const {theme} = useContext(ThemeContext);
   return (
-    <>
-      {/*   <View style={[styles.justify, {marginVertical: 5}]}>
-        <Text style={{color: theme.foreground}}> Your Rank:</Text>
-        <Text style={styles.rank}>#{5}</Text>
-      </View> */}
-
-      <View style={styles.topThreeProfile}>
-        {data.map(({bio, stats}) => (
-          <TopThreeProfile
-            key={bio.id}
-            rank={1}
-            image={bio.imageUrl}
-            points={tabContext == 'All Time' ? stats.totalPoints : stats.currentPoints}
-            name={bio.fullName}
-            username="@echoeyecodes"
-          />
-        ))}
-      </View>
-    </>
+    <View style={styles.topThreeProfile}>
+      {data.map(({bio, stats}) => (
+        <TopThreeProfile
+          key={bio.id}
+          rank={1}
+          image={bio.imageUrl}
+          points={
+            tabContext == 'All Time' ? stats.totalPoints : stats.currentPoints
+          }
+          name={bio.fullName}
+          username="@echoeyecodes"
+        />
+      ))}
+    </View>
   );
 };
-class LeaderBoard extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      data: [],
-    };
-  }
+const LeaderBoard = props => {
+  const [data, setData] = useState([]);
+  const {theme} = useContext(ThemeContext);
+  const {loading, fetchMore, refetch} = useQuery(USER_QUERY, {
+    onCompleted: ({users}) =>{
+      setData([...users]);
+    },
+    onError: () =>{
+      props.showSnackBar("Couldn't contact server. Please try again!");
+    },
+    fetchPolicy: 'cache-and-network',
+    variables: {
+      offset: 0,
+      tabContext: props.tabContext
+    }
+  });
 
-  onRefresh = refetch => {
-    refetch();
-  };
-
-  onCompleted = ({users}) => {
-    this.setState({data: users});
-  };
-
-  onError = () => {
-    this.props.showSnackBar("Couldn't contact server. Please try again!");
-  };
-
-  render() {
-    return (
-      <ThemeContext.Consumer>
-        {({theme}) => (
-          <Query
-            query={USER_QUERY}
-            fetchPolicy="cache-and-network"
-            onCompleted={this.onCompleted}
-            onError={this.onError}
-            variables={{offset: 0, tabContext: this.props.context =='All Time' ? 'all' : null}}>
-            {({loading, refetch, fetchMore}) => {
-              return (
-                <View
-                  style={[
-                    styles.container,
-                    {backgroundColor: theme.background},
-                  ]}>
-                  {this.state.data.length <= 0 && !loading && (
-                    <Text
-                      style={[
-                        styles.emptyUsersText,
-                        {color: theme.foreground},
-                      ]}>
-                      No users yet
-                    </Text>
-                  )}
-                  <FlatList
-                    style={{flex: 1}}
-                    refreshControl={
-                      <RefreshControl
-                        refreshing={loading}
-                        onRefresh={() => {
-                          this.onRefresh(refetch);
-                        }}
-                      />
-                    }
-                    decelerationRate={0.997}
-                    showsVerticalScrollIndicator={false}
-                    keyExtractor={({bio}) => bio.id}
-                    ListFooterComponent={() => (
-                      <Others
-                        fetchMore={fetchMore}
-                        index={this.state.data.length}
-                        tabContext={this.props.context}
-                        data={this.state.data.slice(1, this.state.data.length)}
-                      />
-                    )}
-                    ListHeaderComponent={() => (
-                      <FlatlistHeader tabContext={this.props.context} data={this.state.data.slice(0, 1)} />
-                    )}
-                  />
-                </View>
-              );
-            }}
-          </Query>
+  return (
+    <View style={[styles.container, {backgroundColor: theme.background}]}>
+      {data.length <= 0 && !loading && (
+        <Text style={[styles.emptyUsersText, {color: theme.foreground}]}>
+          No users yet
+        </Text>
+      )}
+      <FlatList
+        style={{flex: 1}}
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={refetch} />
+        }
+        decelerationRate={0.997}
+        showsVerticalScrollIndicator={false}
+        keyExtractor={({bio}) => bio.id}
+        ListFooterComponent={() => (
+          <Others
+            fetchMore={fetchMore}
+            context={props.context}
+            index={data.length}
+            tabContext={props.tabContext}
+            data={data.slice(1, data.length)}
+          />
         )}
-      </ThemeContext.Consumer>
-    );
-  }
-}
+        ListHeaderComponent={() => (
+          <FlatlistHeader tabContext={props.context} data={data.slice(0, 1)} />
+        )}
+      />
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -228,4 +196,4 @@ const mapStateToProps = state => state.snackbar;
 export default connect(
   mapStateToProps,
   {showSnackBar},
-)(LeaderBoard);
+)(memo(LeaderBoard));

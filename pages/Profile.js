@@ -1,4 +1,4 @@
-import React, {useContext, useState, useEffect, useRef} from 'react';
+import React, {useContext, useState, useEffect, useRef, memo} from 'react';
 import {
   View,
   StyleSheet,
@@ -158,14 +158,14 @@ const Profile = props => {
   const [showOptions, setShowOptions] = useState(false);
   const [increaseUserLife, {}] = useMutation(USER_MUTATION);
   const {data, loading, error, refetch} = useQuery(USER_QUERY, {
-    fetchPolicy: 'cache-and-network',
+    fetchPolicy: 'cache-first',
   });
 
   useEffect(() => {
     const unsubscribeRoute = props.navigation.addListener('focus', refetch);
 
     return unsubscribeRoute;
-  }, [props.navigation, refetch]);
+  }, []);
 
   const showAd = () => {
     props.showSnackBar('Loading your ad. Please wait...');
@@ -376,4 +376,4 @@ const mapStateToProps = state => state.snackbar;
 export default connect(
   mapStateToProps,
   {showSnackBar},
-)(Profile);
+)(memo(Profile));

@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React, {PureComponent} from 'react';
 import {
   StyleSheet,
   BackHandler,
@@ -39,7 +39,7 @@ const QUESTION_QUERY = gql`
   }
 `;
 
-class Quiz extends Component {
+class Quiz extends PureComponent {
   constructor(props) {
     super(props);
     this.timeoutRef;

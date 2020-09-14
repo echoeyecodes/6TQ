@@ -1,4 +1,4 @@
-import React, {useState, useContext, useEffect, useRef} from 'react';
+import React, {useState, useContext, useEffect, useRef, memo} from 'react';
 import {
   View,
   StyleSheet,
@@ -17,8 +17,8 @@ import gql from 'graphql-tag';
 import LoadingComponent from '../components/LoadingComponent';
 
 const NOTIFICATION_QUERY = gql`
-  query {
-    notifications {
+  query($offset: Int) {
+    notifications (offset: $offset) {
       route
       timestamp
       isRead
@@ -38,9 +38,11 @@ const NOTIFICATION_SUBSCRIPTION = gql`
   }
 `;
 
-const NotificationItem = ({msg, image, time, route, navigation}) => {
+const notificationItem = ({msg, image, time, route, navigation}) => {
   const {theme} = useContext(ThemeContext);
-  const timeDifference = moment(time).fromNow();
+  const date = new Date()
+  date.setTime(time)
+  const timeDifference = moment(date).fromNow();
   return (
     <TouchableNativeFeedback onPress={() => navigation.navigate(route)}>
       <View style={styles.notificationItem}>
@@ -58,17 +60,25 @@ const NotificationItem = ({msg, image, time, route, navigation}) => {
   );
 };
 
+
+const propsAreEqual = (prevProps, nextProps) =>{
+  return prevProps.msg == nextProps.msg
+}
+
+const MemoizedNotificationItem = memo(notificationItem, propsAreEqual)
+
 const Notifications = props => {
   const {theme} = useContext(ThemeContext);
   const [data, setData] = useState([]);
+  const offset = useRef(null)
   const unsubscribeRef = useRef(null);
-  const {loading, refetch, subscribeToMore} = useQuery(NOTIFICATION_QUERY, {
+  const {loading, refetch, subscribeToMore, fetchMore} = useQuery(NOTIFICATION_QUERY, {
     fetchPolicy: 'cache-and-network',
     onCompleted: queryData => {
       setData([...queryData.notifications]);
+      offset.current = queryData.notifications.length
     },
   });
-
   useEffect(() => {
     if (subscribeToMore) {
       unsubscribeRef.current = subscribeToMore({
@@ -86,16 +96,13 @@ const Notifications = props => {
         unsubscribeRef.current();
       }
     };
-  });
+  }, []);
 
   return (
     <Layout title="Notifications">
       <View style={[styles.container, {backgroundColor: theme.background}]}>
         <View style={styles.notificationHolder}>
           <Text style={[styles.subtitle, {color: theme.foreground}]}>All</Text>
-          {loading ? (
-            <LoadingComponent />
-          ) : (
             <FlatList
               refreshControl={
                 <RefreshControl
@@ -107,17 +114,34 @@ const Notifications = props => {
               }
               data={data}
               keyExtractor={data => String(data.timestamp)}
-              renderItem={({item}) => (
-                <NotificationItem
-                  image={require('../assets/bot.png')}
-                  msg={item.message}
-                  time={item.timestamp}
-                  route={item.route}
-                  navigation={props.navigation}
-                />
-              )}
+              onEndReachedThreshold={0.5}
+              onEndReached={() => {
+                fetchMore({
+                  variables: {
+                    offset: offset.current,
+                  },
+                  updateQuery: (prev, {fetchMoreResult}) => {
+                    if (!fetchMoreResult) return prev;
+                    
+                    offset.current = offset.current + 20
+                    return Object.assign({}, prev, {
+                      notifications: [...prev.notifications, ...fetchMoreResult.notifications],
+                    });
+                  },
+                })
+              }}
+              renderItem={({item}) => {
+                return (
+                  <MemoizedNotificationItem
+                    image={require('../assets/bot.png')}
+                    msg={item.message}
+                    time={item.timestamp}
+                    route={item.route}
+                    navigation={props.navigation}
+                  />
+                )
+              }}
             />
-          )}
         </View>
       </View>
     </Layout>
@@ -161,4 +185,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Notifications;
+export default memo(Notifications);

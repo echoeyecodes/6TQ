@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import { StyleSheet, Text, View, Image, Dimensions } from "react-native";
 import ThemeContext from "../../Context/ThemeContext";
 
@@ -22,6 +22,10 @@ const TopProfile = ({ points, name, username, image, rank }) => {
       color = "#FFA50B";
       break;
   }
+
+  useEffect(() =>{
+
+  }, [])
   return (
     <View style={[styles.container, styles.justify]}>
       <View style={[styles.imageHolder, styles.justify]}>

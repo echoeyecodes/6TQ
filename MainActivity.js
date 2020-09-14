@@ -43,10 +43,10 @@ const TabNavigator = () => {
         style: {elevation: 0},
       }}>
       <Tab.Screen name="Daily">
-        {props => <LeaderBoard {...props} context="Daily" />}
+        {props => <LeaderBoard {...props} context="Daily" tabContext="stats.currentPoints" />}
       </Tab.Screen>
       <Tab.Screen name="All Time">
-        {props => <LeaderBoard {...props} context="All Time" />}
+        {props => <LeaderBoard {...props} context="All Time" tabContext="stats.totalPoints" />}
       </Tab.Screen>
     </Tab.Navigator>
   );

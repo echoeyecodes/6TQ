@@ -38,7 +38,7 @@ const request = async operation => {
 };
 
 const wsLink = new WebSocketLink({
-  uri: 'ws://15.15.15.5:3001/graphql',
+  uri: 'ws://15.15.15.9:3001/graphql',
   options: {
     reconnect: true,
     lazy: true,
@@ -63,7 +63,7 @@ const subscriptionMiddleware = {
 wsLink.subscriptionClient.use([subscriptionMiddleware]);
 
 const httpLink = new HttpLink({
-  uri: 'http://15.15.15.5:3001/graphql',
+  uri: 'http://15.15.15.9:3001/graphql',
   credentials: 'same-origin',
 });
 const link = split(
@@ -177,7 +177,6 @@ class App extends React.Component {
   async bootstrap() {
     this.updateTheme();
     await GoogleSignin.configure({
-      scopes: ['https://www.googleapis.com/auth/drive.readonly'],
       webClientId:
         '40175272704-e1j644s96kd7esn552ivifin6qt0nc5m.apps.googleusercontent.com', // required
     });
