@@ -38,7 +38,7 @@ const request = async operation => {
 };
 
 const wsLink = new WebSocketLink({
-  uri: 'ws://15.15.15.9:3001/graphql',
+  uri: 'ws://https://six-tq-server.herokuapp.com/graphql',
   options: {
     reconnect: true,
     lazy: true,
@@ -63,7 +63,7 @@ const subscriptionMiddleware = {
 wsLink.subscriptionClient.use([subscriptionMiddleware]);
 
 const httpLink = new HttpLink({
-  uri: 'http://15.15.15.9:3001/graphql',
+  uri: 'https://six-tq-server.herokuapp.com/graphql',
   credentials: 'same-origin',
 });
 const link = split(
