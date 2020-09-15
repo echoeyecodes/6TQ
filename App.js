@@ -38,7 +38,7 @@ const request = async operation => {
 };
 
 const wsLink = new WebSocketLink({
-  uri: 'ws://https://six-tq-server.herokuapp.com/graphql',
+  uri: 'ws://six-tq-server.herokuapp.com/graphql',
   options: {
     reconnect: true,
     lazy: true,
@@ -242,3 +242,4 @@ class App extends React.Component {
   }
 }
 export default App;
+

@@ -70,12 +70,11 @@ const Login = props => {
         await firebase.auth().signOut() */
 
     try {
-      const {accessToken, idToken} = await GoogleSignin.signIn().catch(() =>
+      const google = await GoogleSignin.signIn().catch(() =>
         alert('Could not sign in with Google. Please try again!'),
       );
       const credential = firebase.auth.GoogleAuthProvider.credential(
-        idToken,
-        accessToken,
+        google.idToken,
       );
       setIsLoading(true);
       const fireUser = await firebase
@@ -99,7 +98,7 @@ const Login = props => {
         alert('Could not log in. Please try again');
       }
     } catch (error) {
-      alert("Couldn't log in. Please try again");
+      alert(error);
     }
     setIsLoading(false);
   };
